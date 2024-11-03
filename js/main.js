@@ -1,59 +1,136 @@
 console.log('Main loaded');
+ 
 let playerScore = 0;
 let computerScore = 0;
 let playerCredits = 0;
 let computerCredits = 0;
 let currentDiceSum = 0;
-let timer;  
-let timeLeft = 120;  
 let computerDiceSum = 0;
+let timer;
+let timeLeft = 30;  
+let playerChoice = null;
  
-const goButton = document.getElementById("go-button");
-const lowerButton = document.getElementById("lower-button");
-const higherButton = document.getElementById("higher-button");
-const resultDisplay = document.getElementById("result-display");
+const goButton = document.querySelector("#go-button");
+const lowerButton = document.querySelector("#lower-button");
+const higherButton = document.querySelector("#higher-button");
+const diceButton = document.querySelector("#dice-button");
+const resultDisplay = document.querySelector("#result-display");
 const playerCreditsDisplay = document.querySelector(".player-credits");
-const goText = document.querySelector(".message-box");
 const computerCreditsDisplay = document.querySelector('.computer-credits');
 const timerDisplay = document.querySelector(".timer-display");
  
+const playerDiceOne = document.querySelector('.player-dice-one');
+const playerDiceTwo = document.querySelector('.player-dice-two');
+const computerDiceOne = document.querySelector('.computer-dice-one');
+const computerDiceTwo = document.querySelector('.computer-dice-two');
+ 
 goButton.addEventListener('click', function() {
     console.log('Go button clicked');
-    goButton.remove();
-    goText.remove();
+    goButton.remove();  
+    document.querySelector(".message-box").remove();
  
-    currentDiceSum = 0;
-    computerDiceSum = 0;
- 
-    for (let i = 0; i < 2; i++) {
-        const diceValue = Math.floor(Math.random() * 6) + 1;
-        currentDiceSum += diceValue;
-        console.log(`Speler Dobbelsteen ${i + 1}:`, diceValue);
-    }
- 
-    for (let i = 0; i < 2; i++) {
-        const computerDiceValue = Math.floor(Math.random() * 6) + 1;
-        computerDiceSum += computerDiceValue;
-        console.log(`Computer Dobbelsteen ${i + 1}:`, computerDiceValue);    
-    }
- 
-    console.log("Speler Totaal:", currentDiceSum);
-    console.log("Computer Totaal:", computerDiceSum);
-    resultDisplay.textContent = `Speler Totaal: ${currentDiceSum}, Computer Totaal: ${computerDiceSum}`;
-   
-    document.querySelector('.comuter-dice-display').textContent = `computer heeft gegooid ${computerDiceSum}`;
+    resetGame();
     startTimer();
+ 
+    lowerButton.disabled = false;
+    higherButton.disabled = false;
+    diceButton.disabled = true;
 });
  
 lowerButton.addEventListener('click', function() {
     console.log('Lower button clicked');
-    checkGuess('lower');
+    playerChoice = 'lower';
+    enableDiceButton();
 });
  
 higherButton.addEventListener('click', function() {
     console.log('Higher button clicked');
-    checkGuess('higher');
+    playerChoice = 'higher';
+    enableDiceButton();
 });
+ 
+function enableDiceButton() {
+    if (playerChoice) {
+        diceButton.disabled = false;
+        lowerButton.disabled = true;
+        higherButton.disabled = true;
+    }
+}
+ 
+function rollDiceValue() {
+    return Math.floor(Math.random() * 6) + 1;
+}
+ 
+diceButton.addEventListener('click', rollDice);
+ 
+function rollDice() {
+    currentDiceSum = 0;
+    computerDiceSum = 0;
+ 
+    playerDiceOne.classList.add('roll');
+    playerDiceTwo.classList.add('roll');
+ 
+    setTimeout(() => {
+        const playerRoll1 = rollDiceValue();
+        const playerRoll2 = rollDiceValue();
+        currentDiceSum = playerRoll1 + playerRoll2;
+        playerDiceOne.textContent = playerRoll1;
+        playerDiceTwo.textContent = playerRoll2;
+ 
+        setTimeout(() => {
+            simulateDiceRollForComputer();
+        }, 500);
+ 
+    }, 500);
+}
+ 
+function simulateDiceRollForComputer() {
+    computerDiceSum = 0;
+ 
+    computerDiceOne.classList.add('roll');
+    computerDiceTwo.classList.add('roll');
+ 
+    setTimeout(() => {
+        const computerRoll1 = rollDiceValue();
+        const computerRoll2 = rollDiceValue();
+        computerDiceSum = computerRoll1 + computerRoll2;
+        computerDiceOne.textContent = computerRoll1;
+        computerDiceTwo.textContent = computerRoll2;
+ 
+        checkGuess(playerChoice);
+    }, 500);
+}
+ 
+function checkGuess(playerGuess) {
+    console.log("Speler Gok:", playerGuess, "Speler Totaal:", currentDiceSum, "Computer Totaal:", computerDiceSum);
+ 
+    if (currentDiceSum === computerDiceSum) {
+        resultDisplay.textContent = `Gelijkspel! Beide gooiden ${currentDiceSum}. Geen credits voor niemand.`;
+    } else if (playerGuess === 'lower' && currentDiceSum < computerDiceSum) {
+        playerCredits++;
+        resultDisplay.textContent = `Je hebt gewonnen! Totaal: ${currentDiceSum} (lager dan ${computerDiceSum})`;
+    } else if (playerGuess === 'higher' && currentDiceSum > computerDiceSum) {
+        playerCredits++;
+        resultDisplay.textContent = `Je hebt gewonnen! Totaal: ${currentDiceSum} (hoger dan ${computerDiceSum})`;
+    } else {
+        computerCredits++;
+        resultDisplay.textContent = `Je hebt verloren! Totaal: ${currentDiceSum} (was ${computerDiceSum})`;
+    }
+ 
+    playerCreditsDisplay.textContent = playerCredits;
+    computerCreditsDisplay.textContent = computerCredits;
+ 
+    resetGameForNextRound();
+}
+ 
+function resetGameForNextRound() {
+    currentDiceSum = 0;
+    computerDiceSum = 0;
+    playerChoice = null;
+    lowerButton.disabled = false;
+    higherButton.disabled = false;
+    diceButton.disabled = true;
+}
  
 function startTimer() {
     timerDisplay.textContent = `Tijd over: ${timeLeft} seconden`;
@@ -64,54 +141,46 @@ function startTimer() {
         if (timeLeft <= 0) {
             clearInterval(timer);
             resultDisplay.textContent += ' Tijd is op!';
-            goButton.disabled = true;
-            lowerButton.disabled = true;
-            higherButton.disabled = true;
-           
-            showWinner();
+            endGame();  
         }
     }, 1000);
 }
  
+function endGame() {
+    lowerButton.disabled = true;
+    higherButton.disabled = true;
+    diceButton.disabled = true;
+ 
+    resultDisplay.textContent = '';
+    showWinner();
+ 
+    const restartButton = document.createElement('button');
+    restartButton.textContent = 'Herstart het spel';
+    restartButton.addEventListener('click', function() {
+        location.reload();
+    });
+    document.body.appendChild(restartButton);
+}
+ 
 function showWinner() {
-    console.log("player credits:", playerCredits);
-    console.log("computer credits:", computerCredits);
     if (playerCredits > computerCredits) {
-        resultDisplay.textContent += ' Je hebt gewonen!';
+        resultDisplay.textContent = 'Je hebt gewonnen!';
     } else if (playerCredits < computerCredits) {
-        resultDisplay.textContent += ' De computer heeft gewonen!';
+        resultDisplay.textContent = 'De computer heeft gewonnen!';
     } else {
-        resultDisplay.textContent += ' Het is gelijkspel';
+        resultDisplay.textContent = 'Het is gelijkspel!';
     }
 }
  
-function checkGuess(guess) {
-    if (currentDiceSum) {
-        const randomNumber = Math.floor(Math.random() * 12) + 1;
-        console.log("Gok:", guess, "Totaal:", currentDiceSum);
- 
-        if (guess === 'lower' && randomNumber < currentDiceSum) {
-            playerScore++;
-            playerCredits++;
-            console.log("Je hebt gewonnen!");
-            resultDisplay.textContent += ` Je hebt gewonnen met: ${randomNumber}`;
-        } else if (guess === 'higher' && randomNumber > currentDiceSum) {
-            playerScore++;
-            playerCredits++;
-            console.log("Je hebt gewonnen!");
-            resultDisplay.textContent += ` Je hebt gewonnen met: ${randomNumber}`;
-        } else {
-            computerScore++;
-            computerCredits++;
-            console.log("Je hebt verloren.");
-            resultDisplay.textContent += ` Je hebt verloren met: ${randomNumber}`;
-        }
-        playerCreditsDisplay.textContent = playerCredits;
-        computerCreditsDisplay.textContent = computerCredits;
- 
-        console.log("Player Credits:", playerCredits);
-        console.log("Computer Credits:", computerCredits);
-    } else {
-        console.log("Klik eerst op de Go-knop!");
-    }
+function resetGame() {
+    playerScore = 0;
+    computerScore = 0;
+    playerCredits = 0;
+    computerCredits = 0;
+    currentDiceSum = 0;
+    computerDiceSum = 0;
+    timeLeft = 30;
+    resultDisplay.textContent = '';
+    playerCreditsDisplay.textContent = playerCredits;
+    computerCreditsDisplay.textContent = computerCredits;
 }
